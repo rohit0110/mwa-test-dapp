@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Minimal dApp to test MWA issue #1364",
   "private": true,
+  "engines": {
+    "node": ">=20.x",
+    "npm": ">=10.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
