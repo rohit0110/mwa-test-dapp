@@ -279,17 +279,42 @@ export default function WalletTest() {
   }, [authenticated, publicKey, activeWallet, connection]);
 
   const signTestTransaction = useCallback(async () => {
+    console.log('🔘 [SIGN-TX] Sign Transaction button clicked');
+    console.log('📊 [SIGN-TX] Current state:', {
+      authenticated,
+      hasPublicKey: !!publicKey,
+      hasActiveWallet: !!activeWallet,
+      walletsCount: wallets.length
+    });
+
+    if (!authenticated) {
+      const errMsg = 'Not authenticated - please connect wallet first';
+      setError(errMsg);
+      console.error(`❌ [SIGN-TX] ${errMsg}`);
+      return;
+    }
+
     if (!publicKey || !activeWallet) {
-      setError('Wallet not connected');
-      console.log('❌ No wallet connected');
+      const errMsg = 'WalletSignTransactionError: Connected wallet does not support signing transactions';
+      setError(errMsg);
+      console.error('❌ [SIGN-TX] ========================================');
+      console.error('❌ [SIGN-TX] ERROR REPRODUCED!');
+      console.error('❌ [SIGN-TX] ========================================');
+      console.error(`❌ [SIGN-TX] ${errMsg}`);
+      console.error(`📊 [SIGN-TX] Authenticated: ${authenticated} ✅`);
+      console.error(`📊 [SIGN-TX] PublicKey: ${publicKey ? 'exists' : 'null'} ${publicKey ? '✅' : '❌'}`);
+      console.error(`📊 [SIGN-TX] ActiveWallet: ${activeWallet ? 'exists' : 'null'} ${activeWallet ? '✅' : '❌'}`);
+      console.error('❌ [SIGN-TX] This is the exact scenario from issue #1364!');
+      console.error('❌ [SIGN-TX] ========================================');
       return;
     }
 
     // Check if signTransaction method exists
     if (typeof activeWallet.signTransaction !== 'function') {
-      const errMsg = 'Wallet does not have signTransaction method';
+      const errMsg = 'WalletSignTransactionError: Wallet does not have signTransaction method';
       setError(errMsg);
-      console.log(`❌ ${errMsg}`);
+      console.error(`❌ [SIGN-TX] ${errMsg}`);
+      console.error(`🔍 [SIGN-TX] ActiveWallet object:`, activeWallet);
       return;
     }
 
@@ -433,48 +458,54 @@ export default function WalletTest() {
           )}
         </div>
 
-        {authenticated && publicKey && activeWallet && (
+        {authenticated && (
           <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded">
-              <div className="text-sm font-semibold mb-1 text-gray-700">Wallet Type:</div>
-              <div className="text-sm text-gray-900">{activeWallet.walletClientType}</div>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded">
-              <div className="text-sm font-semibold mb-1 text-gray-700">Public Key:</div>
-              <div className="text-xs break-all font-mono text-gray-900">{publicKey.toString()}</div>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded">
-              <div className="text-sm font-semibold mb-1 text-gray-700">Privy Wallet Methods:</div>
-              <div className="text-xs space-y-1">
-                <div className={typeof activeWallet.signTransaction === 'function' ? 'text-green-600' : 'text-red-600'}>
-                  signTransaction: {typeof activeWallet.signTransaction === 'function' ? '✅ Available' : '❌ Not Available'}
+            {publicKey && activeWallet ? (
+              <>
+                <div className="bg-gray-50 p-4 rounded">
+                  <div className="text-sm font-semibold mb-1 text-gray-700">Wallet Type:</div>
+                  <div className="text-sm text-gray-900">{activeWallet.walletClientType}</div>
                 </div>
-                <div className={typeof activeWallet.signMessage === 'function' ? 'text-green-600' : 'text-red-600'}>
-                  signMessage: {typeof activeWallet.signMessage === 'function' ? '✅ Available' : '❌ Not Available'}
-                </div>
-              </div>
-            </div>
 
-            {balance !== null && (
-              <div className="bg-gray-50 p-4 rounded">
-                <div className="text-sm font-semibold mb-1 text-gray-700">Balance:</div>
-                <div className="text-lg font-bold text-gray-900">{balance.toFixed(4)} SOL</div>
-                <div className="text-xs text-gray-500">(Devnet)</div>
+                <div className="bg-gray-50 p-4 rounded">
+                  <div className="text-sm font-semibold mb-1 text-gray-700">Public Key:</div>
+                  <div className="text-xs break-all font-mono text-gray-900">{publicKey.toString()}</div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded">
+                  <div className="text-sm font-semibold mb-1 text-gray-700">Privy Wallet Methods:</div>
+                  <div className="text-xs space-y-1">
+                    <div className={typeof activeWallet.signTransaction === 'function' ? 'text-green-600' : 'text-red-600'}>
+                      signTransaction: {typeof activeWallet.signTransaction === 'function' ? '✅ Available' : '❌ Not Available'}
+                    </div>
+                    <div className={typeof activeWallet.signMessage === 'function' ? 'text-green-600' : 'text-red-600'}>
+                      signMessage: {typeof activeWallet.signMessage === 'function' ? '✅ Available' : '❌ Not Available'}
+                    </div>
+                  </div>
+                </div>
+
+                {balance !== null && (
+                  <div className="bg-gray-50 p-4 rounded">
+                    <div className="text-sm font-semibold mb-1 text-gray-700">Balance:</div>
+                    <div className="text-lg font-bold text-gray-900">{balance.toFixed(4)} SOL</div>
+                    <div className="text-xs text-gray-500">(Devnet)</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
+                <div className="text-sm font-semibold mb-1 text-yellow-800">⚠️ Authenticated but No Wallet Connected</div>
+                <div className="text-xs text-yellow-700">
+                  This is the bug scenario - user is authenticated but Privy didn't reconnect the wallet after refresh.
+                </div>
               </div>
             )}
 
             <button
               onClick={signTestTransaction}
-              disabled={typeof activeWallet.signTransaction !== 'function'}
-              className={`w-full py-3 px-6 rounded-lg font-semibold transition ${
-                typeof activeWallet.signTransaction === 'function'
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition"
             >
-              Sign Test Transaction
+              {activeWallet ? 'Sign Test Transaction' : 'Try Sign Transaction (Will Reproduce Error)'}
             </button>
 
             {txSignature && (

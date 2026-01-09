@@ -1,4 +1,4 @@
-# Privy + MWA Wallet Reconnection Workaround
+# Privy + MWA Wallet Reconnection Bug - NO WORKAROUND AVAILABLE
 
 ## Issue Summary
 
@@ -26,77 +26,75 @@ Privy's `shouldAutoConnect: true` configuration (in `toSolanaWalletConnectors`) 
 
 This is a bug in Privy's Wallet Standard integration where `shouldAutoConnect` doesn't properly handle wallet reconnection for Wallet Standard wallets after page refresh.
 
-## The Workaround
+## Why No Workaround Works
 
-### Location
-File: `app/wallet-test.tsx` (lines 82-95)
+### Attempted Workarounds
 
-### Implementation
+**Attempt 1: Call `login()` when authenticated but no wallet**
+- Result: ❌ Privy rejects with "Attempted to log in, but user is already logged in"
+- Reason: Can't login again when already authenticated
 
+**Attempt 2: Direct Wallet Standard Connection**
+- Result: ❌ Connection succeeds but Privy state doesn't update
+- Evidence: Silent connect returns account successfully, but `wallets.length` stays 0
+- Code tested:
 ```typescript
-useEffect(() => {
-  // ... existing auto-login logic ...
-
-  else if (ready && authenticated && wallets.length === 0 && !loginAttempted.current) {
-    // WORKAROUND: Privy restored session but didn't reconnect wallet
-    // This is a bug in Privy's shouldAutoConnect for Wallet Standard wallets
-    loginAttempted.current = true;
-    console.log('🔧 [RECONNECT] WORKAROUND: Authenticated but no wallet detected');
-    console.log('🔧 [RECONNECT] This is a Privy bug - shouldAutoConnect doesn\'t reconnect Wallet Standard wallets');
-    console.log('🔄 [RECONNECT] Manually triggering wallet reconnection via login()...');
-
-    login().then(() => {
-      console.log('✅ [RECONNECT] Wallet reconnection successful');
-    }).catch((err) => {
-      console.error('❌ [RECONNECT] Wallet reconnection failed:', err.message);
-    });
-  }
-}, [ready, authenticated, login, wallets.length, user]);
+const mwaWallet = getWallets().get().find(w => w.name === 'Mobile Wallet Adapter');
+const result = await mwaWallet.features['standard:connect'].connect({ silent: true });
+// Returns: { accounts: [...] } ✅
+// BUT Privy wallets.length still = 0 ❌
 ```
+- Reason: Privy has internal state management that isn't updated by direct Wallet Standard connections
 
-### How It Works
+**Attempt 3: Reload after Wallet Standard connection**
+- Result: ❌ Creates infinite reload loop
+- Flow:
+  1. Page loads → authenticated but no wallet
+  2. Silent connect succeeds
+  3. Page reloads
+  4. After reload, Privy still has same bug
+  5. Loop repeats infinitely
+- Reason: Privy has the same `shouldAutoConnect` bug after every reload
 
-1. **Detects the broken state**: `authenticated && wallets.length === 0`
-2. **Logs the workaround**: Documents that this is addressing a Privy bug
-3. **Manually triggers reconnection**: Calls `login()` to force Privy to reconnect to the wallet
-4. **One-time execution**: Uses `loginAttempted` ref to prevent infinite loops
+### The Core Problem
 
-### Expected Behavior After Fix
+Privy manages wallet state internally and only updates it through its own connection flow. There's no way to:
+- Force Privy to re-scan Wallet Standard
+- Update Privy's wallet state from outside
+- Skip the authentication check to re-login
 
-**After Page Refresh (With Workaround):**
-1. MWA registers successfully ✅
-2. Privy restores user session ✅
-3. App detects: `authenticated but no wallet`
-4. Workaround triggers: Calls `login()` automatically
-5. Privy reconnects to MWA wallet ✅
-6. Result: User authenticated AND wallet available ✅
+**Current Status**: Users must manually click "Connect Wallet" after every page refresh
 
-## Testing
+## Bug Confirmation
 
-### What to Look For
+### What You'll See After Page Refresh
 
-After implementing this workaround and refreshing the page, you should see:
+The logs clearly demonstrate the bug:
 
 ```
-🔧 [RECONNECT] WORKAROUND: Authenticated but no wallet detected
-🔧 [RECONNECT] This is a Privy bug - shouldAutoConnect doesn't reconnect Wallet Standard wallets
-🔄 [RECONNECT] Manually triggering wallet reconnection via login()...
-✅ [RECONNECT] Wallet reconnection successful
-🔐 [AUTH] Authenticated with wallet:
-   💼 [AUTH] Wallet type: mobile_wallet_adapter
-   🔧 [AUTH] Methods available: { signTransaction: true, signMessage: true }
+✅ [INIT] MWA wallet found after 1 attempts (50ms)!
+🐛 [BUG] ========================================
+🐛 [BUG] PRIVY BUG CONFIRMED
+🐛 [BUG] ========================================
+🐛 [BUG] Authenticated but no wallet connected
+🔍 [BUG] Wallet Standard has 1 wallet(s) registered
+✅ [BUG] MWA wallet IS present in Wallet Standard
+🐛 [BUG] Privy simply isn't checking Wallet Standard during session restore
+🐛 [BUG] NO WORKAROUND AVAILABLE
+🐛 [BUG] User must manually click "Connect Wallet" after refresh
 ```
 
-### Success Criteria
+### Evidence of the Bug
 
-- ✅ No more "CRITICAL: Authenticated but no active wallet!" error
-- ✅ `walletsCount` should be 1 after refresh
-- ✅ `signTransaction` method available
-- ✅ Transactions work after refresh without manual reconnection
+1. ✅ MWA successfully registers in Wallet Standard
+2. ✅ Privy restores user authentication (`authenticated: true`)
+3. ❌ Privy does NOT reconnect to wallet (`walletsCount: 0`)
+4. ✅ MWA wallet IS present and queryable in Wallet Standard
+5. ❌ Privy's `shouldAutoConnect` simply doesn't check Wallet Standard during restore
 
 ## Reporting to Privy
 
-This workaround should be reported to Privy as a bug. The issue should include:
+This bug should be reported to Privy. The issue should include:
 
 ### Bug Report Template
 
@@ -129,26 +127,34 @@ externalWallets: {
 ```
 
 **Workaround**:
-Manually call `login()` when detecting `authenticated && wallets.length === 0`
+None available. Attempted solutions:
+1. Calling `login()` - rejected (already authenticated)
+2. Direct Wallet Standard connect - doesn't update Privy state
+3. Reload after connect - creates infinite loop
+
+Users must manually reconnect wallet after every page refresh.
 
 **Evidence**:
-See attached logs showing:
-- Wallet Standard has 1 wallet registered
-- Privy session restored (authenticated: true)
-- Privy wallet state empty (walletsCount: 0)
+See production logs at https://mwa-test-dapp.vercel.app showing:
+- Wallet Standard has 1 wallet registered ✅
+- Privy session restored (authenticated: true) ✅
+- Privy wallet state empty (walletsCount: 0) ❌
+- Silent Wallet Standard connect succeeds but Privy state not updated ❌
 
-## Future Considerations
+## Next Steps
 
-### When Privy Fixes This
+### What Privy Needs to Fix
 
-Once Privy fixes their `shouldAutoConnect` implementation for Wallet Standard wallets, this workaround can be removed. The original auto-login logic will be sufficient.
+Privy's `shouldAutoConnect: true` in `toSolanaWalletConnectors` needs to:
+1. Re-query Wallet Standard API during session restore (not just check `window.solana`)
+2. Attempt silent connection to previously connected Wallet Standard wallets
+3. Update internal wallet state when Wallet Standard connection succeeds
 
-### Alternative Solutions
+### Alternative Solutions (If Privy Doesn't Fix)
 
-If Privy doesn't fix this, consider:
-1. Using Privy's `autoLogin` feature (if available for Wallet Standard)
-2. Implementing a custom wallet state persistence layer
-3. Switching to a different wallet adapter library
+1. Switch to a different wallet adapter library that properly supports Wallet Standard
+2. Implement custom state persistence outside of Privy
+3. Accept the UX limitation and require manual reconnection after refresh
 
 ## Documentation References
 
@@ -158,6 +164,9 @@ If Privy doesn't fix this, consider:
 
 ## Change Log
 
-- **2026-01-08**: Identified root cause as Privy bug, implemented workaround
+- **2026-01-09**: Confirmed NO workaround available after testing multiple approaches
+- **2026-01-09**: Removed infinite reload loop from failed workaround attempt
+- **2026-01-09**: Updated documentation with evidence that bug cannot be worked around
+- **2026-01-08**: Identified root cause as Privy bug, attempted workarounds
 - **2026-01-08**: Updated RCA in MWA1364.txt with log evidence
 - **2026-01-08**: Added comprehensive logging to track issue

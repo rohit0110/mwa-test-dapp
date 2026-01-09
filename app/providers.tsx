@@ -145,7 +145,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
         loginMethods: ['wallet'],
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          createOnLogin: 'off', // Disable embedded wallet creation
         },
         externalWallets: {
           solana: {
