@@ -58,8 +58,7 @@ export default function WalletTest() {
             type: w.walletClientType,
             connector: w.connectorType,
             address: w.address?.substring(0, 8) + '...',
-            imported: w.imported,
-            delegated: w.delegated
+            imported: w.imported
           });
         });
       } else {
@@ -74,11 +73,7 @@ export default function WalletTest() {
       loginAttempted.current = true;
       console.log('🔄 [RECONNECT] App is ready but not authenticated. Attempting auto-login...');
       console.log(`📊 [RECONNECT] State - Ready: ${ready}, Authenticated: ${authenticated}, Wallets: ${wallets.length}`);
-      login().then(() => {
-        console.log('✅ [RECONNECT] Auto-login completed');
-      }).catch((err) => {
-        console.error('❌ [RECONNECT] Auto-login failed:', err.message);
-      });
+      login();
     } else if (ready && authenticated && wallets.length === 0 && !loginAttempted.current) {
       // WORKAROUND: Privy restored session but didn't reconnect wallet
       // This is a bug in Privy's shouldAutoConnect for Wallet Standard wallets
