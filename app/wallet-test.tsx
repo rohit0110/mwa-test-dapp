@@ -69,9 +69,11 @@ export default function WalletTest() {
     }
   }, [authenticated, wallets, ready, user]);
 
-  // Track authentication state changes
+  // Track authentication state changes - runs on EVERY render
   useEffect(() => {
     const now = new Date().toISOString();
+
+    // Log every time to catch all changes
     if (prevAuthenticatedRef.current !== authenticated) {
       console.log('🔐 [AUTH-CHANGE] ========================================');
       console.log('🔐 [AUTH-CHANGE] AUTHENTICATION STATE CHANGED!');
@@ -82,20 +84,21 @@ export default function WalletTest() {
       console.log(`🔐 [AUTH-CHANGE] Ready: ${ready}`);
       console.log(`🔐 [AUTH-CHANGE] Wallets count: ${wallets.length}`);
       console.log(`🔐 [AUTH-CHANGE] User: ${user ? user.id : 'null'}`);
+      console.log(`🔐 [AUTH-CHANGE] Stack trace:`);
+      console.trace();
 
       if (authenticated === false && prevAuthenticatedRef.current === true) {
         console.error('❌ [AUTH-CHANGE] USER WAS LOGGED OUT!');
-        console.error('❌ [AUTH-CHANGE] This might be why sign transaction fails');
-        if (authChangedAtRef.current) {
-          console.error(`❌ [AUTH-CHANGE] Previous auth change was at: ${authChangedAtRef.current}`);
-        }
+        console.error('❌ [AUTH-CHANGE] This is why sign transaction will fail');
+        console.error('❌ [AUTH-CHANGE] Time between login and logout: ' +
+          (authChangedAtRef.current ? `${(new Date(now).getTime() - new Date(authChangedAtRef.current).getTime())}ms` : 'unknown'));
       }
 
       console.log('🔐 [AUTH-CHANGE] ========================================');
       prevAuthenticatedRef.current = authenticated;
       authChangedAtRef.current = now;
     }
-  }, [authenticated, ready, wallets.length, user]);
+  });  // NO dependencies - run on every render to catch ALL changes
 
   // Attempt to reconnect on load
   useEffect(() => {
