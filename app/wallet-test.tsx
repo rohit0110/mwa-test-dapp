@@ -496,7 +496,7 @@ export default function WalletTest() {
               <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
                 <div className="text-sm font-semibold mb-1 text-yellow-800">⚠️ Authenticated but No Wallet Connected</div>
                 <div className="text-xs text-yellow-700">
-                  This is the bug scenario - user is authenticated but Privy didn't reconnect the wallet after refresh.
+                  This is the bug scenario - user is authenticated but Privy did not reconnect the wallet after refresh.
                 </div>
               </div>
             )}
