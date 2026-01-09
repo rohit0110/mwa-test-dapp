@@ -75,53 +75,40 @@ export default function WalletTest() {
       console.log(`📊 [RECONNECT] State - Ready: ${ready}, Authenticated: ${authenticated}, Wallets: ${wallets.length}`);
       login();
     } else if (ready && authenticated && wallets.length === 0 && !loginAttempted.current) {
-      // WORKAROUND: Privy restored session but didn't reconnect wallet
-      // This is a bug in Privy's shouldAutoConnect for Wallet Standard wallets
+      // BUG CONFIRMED: Privy restored session but didn't reconnect wallet
+      // This is a confirmed bug in Privy's shouldAutoConnect for Wallet Standard wallets
       loginAttempted.current = true;
-      console.log('🔧 [RECONNECT] WORKAROUND: Authenticated but no wallet detected');
-      console.log('🔧 [RECONNECT] This is a Privy bug - shouldAutoConnect doesn\'t reconnect Wallet Standard wallets');
-      console.log(`📊 [RECONNECT] User: ${user?.id}, LinkedAccounts: ${user?.linkedAccounts?.length || 0}`);
-      console.log('🔄 [RECONNECT] Attempting direct Wallet Standard connection...');
 
-      // Try to directly connect to the Wallet Standard wallet
-      const reconnectWallet = async () => {
-        try {
-          const walletsApi = getWallets();
-          const standardWallets = walletsApi.get();
-          console.log(`🔍 [RECONNECT] Found ${standardWallets.length} Wallet Standard wallet(s)`);
+      console.log('🐛 [BUG] ========================================');
+      console.log('🐛 [BUG] PRIVY BUG CONFIRMED');
+      console.log('🐛 [BUG] ========================================');
+      console.log('🐛 [BUG] Authenticated but no wallet connected');
+      console.log('🐛 [BUG] This confirms Privy\'s shouldAutoConnect bug for Wallet Standard wallets');
+      console.log(`🐛 [BUG] User: ${user?.id}`);
+      console.log(`🐛 [BUG] LinkedAccounts: ${user?.linkedAccounts?.length || 0}`);
+      console.log('🐛 [BUG] ========================================');
 
-          const mwaWallet = standardWallets.find((w: any) =>
-            w.name === 'Mobile Wallet Adapter' ||
-            w.name.includes('Mobile Wallet Adapter')
-          );
+      // Verify the wallet exists in Wallet Standard
+      const walletsApi = getWallets();
+      const standardWallets = walletsApi.get();
+      console.log(`🔍 [BUG] Wallet Standard has ${standardWallets.length} wallet(s) registered`);
 
-          if (mwaWallet) {
-            console.log(`✅ [RECONNECT] Found MWA wallet, attempting silent connect...`);
-            console.log(`📊 [RECONNECT] MWA has ${mwaWallet.accounts?.length || 0} accounts cached`);
+      const mwaWallet = standardWallets.find((w: any) =>
+        w.name === 'Mobile Wallet Adapter' || w.name.includes('Mobile Wallet Adapter')
+      );
 
-            // Try silent connect first (using cached authorization)
-            if (typeof (mwaWallet as any).features?.['standard:connect']?.connect === 'function') {
-              const result = await (mwaWallet as any).features['standard:connect'].connect({ silent: true });
-              console.log(`✅ [RECONNECT] Silent connect result:`, result);
+      if (mwaWallet) {
+        console.log('✅ [BUG] MWA wallet IS present in Wallet Standard');
+        console.log(`📊 [BUG] MWA has ${(mwaWallet as any).accounts?.length || 0} accounts cached`);
+        console.log('🐛 [BUG] Privy simply isn\'t checking Wallet Standard during session restore');
+      } else {
+        console.log('❌ [BUG] MWA wallet NOT found in Wallet Standard (unexpected)');
+      }
 
-              // Give Privy a moment to detect the wallet
-              await new Promise(resolve => setTimeout(resolve, 500));
-
-              // Force a re-render to pick up the wallet
-              window.location.reload();
-            } else {
-              console.error('❌ [RECONNECT] MWA wallet does not have connect method');
-            }
-          } else {
-            console.error('❌ [RECONNECT] MWA wallet not found in Wallet Standard');
-          }
-        } catch (err: any) {
-          console.error('❌ [RECONNECT] Wallet reconnection failed:', err.message);
-          console.error('❌ [RECONNECT] Full error:', err);
-        }
-      };
-
-      reconnectWallet();
+      console.log('🐛 [BUG] ========================================');
+      console.log('🐛 [BUG] NO WORKAROUND AVAILABLE');
+      console.log('🐛 [BUG] User must manually click "Connect Wallet" after refresh');
+      console.log('🐛 [BUG] ========================================');
     } else if (ready && authenticated && wallets.length > 0) {
       console.log('✅ [RECONNECT] Already authenticated with wallet, no action needed');
     } else if (!ready) {
