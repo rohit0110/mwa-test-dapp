@@ -16,6 +16,8 @@ export default function WalletTest() {
   const hasInitialized = useRef(false);
   const hasCheckedWallets = useRef(false);
   const loginAttempted = useRef(false);
+  const prevAuthenticatedRef = useRef(authenticated);
+  const authChangedAtRef = useRef<string>('');
 
   const activeWallet = useMemo(() => {
     const wallet = wallets[0];
@@ -66,6 +68,34 @@ export default function WalletTest() {
       }
     }
   }, [authenticated, wallets, ready, user]);
+
+  // Track authentication state changes
+  useEffect(() => {
+    const now = new Date().toISOString();
+    if (prevAuthenticatedRef.current !== authenticated) {
+      console.log('🔐 [AUTH-CHANGE] ========================================');
+      console.log('🔐 [AUTH-CHANGE] AUTHENTICATION STATE CHANGED!');
+      console.log('🔐 [AUTH-CHANGE] ========================================');
+      console.log(`🔐 [AUTH-CHANGE] Previous: ${prevAuthenticatedRef.current}`);
+      console.log(`🔐 [AUTH-CHANGE] Current: ${authenticated}`);
+      console.log(`🔐 [AUTH-CHANGE] Timestamp: ${now}`);
+      console.log(`🔐 [AUTH-CHANGE] Ready: ${ready}`);
+      console.log(`🔐 [AUTH-CHANGE] Wallets count: ${wallets.length}`);
+      console.log(`🔐 [AUTH-CHANGE] User: ${user ? user.id : 'null'}`);
+
+      if (authenticated === false && prevAuthenticatedRef.current === true) {
+        console.error('❌ [AUTH-CHANGE] USER WAS LOGGED OUT!');
+        console.error('❌ [AUTH-CHANGE] This might be why sign transaction fails');
+        if (authChangedAtRef.current) {
+          console.error(`❌ [AUTH-CHANGE] Previous auth change was at: ${authChangedAtRef.current}`);
+        }
+      }
+
+      console.log('🔐 [AUTH-CHANGE] ========================================');
+      prevAuthenticatedRef.current = authenticated;
+      authChangedAtRef.current = now;
+    }
+  }, [authenticated, ready, wallets.length, user]);
 
   // Attempt to reconnect on load
   useEffect(() => {
@@ -144,73 +174,24 @@ export default function WalletTest() {
   }, [authenticated, activeWallet, ready, wallets, user]);
 
 
-  // Check for wallets ONCE when ready
+  // Check Wallet Standard once when ready (simplified)
   useEffect(() => {
     if (ready && !hasCheckedWallets.current && typeof window !== 'undefined') {
       hasCheckedWallets.current = true;
 
-      console.log('🔍 [WALLET-CHECK] Starting wallet environment check...');
-      console.log(`✅ [WALLET-CHECK] Privy ready: ${ready}`);
-      console.log(`✅ [WALLET-CHECK] Window object available: ${typeof window !== 'undefined'}`);
-      console.log(`✅ [WALLET-CHECK] Navigator available: ${typeof navigator !== 'undefined'}`);
+      console.log('🔍 [WALLET-CHECK] Checking Wallet Standard...');
+      try {
+        const walletsApi = getWallets();
+        const standardWallets = walletsApi.get();
 
-      // Check for Wallet Standard API
-      const checkWallets = () => {
-        console.log('🔎 [WALLET-CHECK] Checking for Wallet Standard wallets...');
+        console.log(`📊 [WALLET-CHECK] Found ${standardWallets.length} wallet(s) in Wallet Standard`);
 
-        // Use the correct modern Wallet Standard API
-        try {
-          const walletsApi = getWallets();
-          const standardWallets = walletsApi.get();
-
-          console.log(`✅ [WALLET-CHECK] Wallet Standard API initialized successfully`);
-          console.log(`📊 [WALLET-CHECK] Found ${standardWallets.length} wallet(s)`);
-
-          if (standardWallets.length === 0) {
-            console.log('⚠️ [WALLET-CHECK] No wallets detected via Wallet Standard API');
-            console.log('ℹ️ [WALLET-CHECK] This is normal in desktop browsers without wallet extensions');
-            console.log('ℹ️ [WALLET-CHECK] On mobile device with MWA, wallet should register automatically');
-          }
-
-          standardWallets.forEach((w: any, idx: number) => {
-            console.log(`📱 [WALLET-CHECK] Wallet #${idx + 1}: ${w.name}`);
-            console.log(`   🏷️ [WALLET-CHECK] Version: ${w.version || 'unknown'}`);
-            console.log(`   🖼️ [WALLET-CHECK] Has Icon: ${w.icon ? 'yes' : 'no'}`);
-            console.log(`   👥 [WALLET-CHECK] Accounts: ${w.accounts?.length || 0}`);
-            if (w.features) {
-              const featureNames = Object.keys(w.features);
-              console.log(`   ⚙️ [WALLET-CHECK] Features (${featureNames.length}): ${featureNames.join(', ')}`);
-            }
-          });
-        } catch (error) {
-          console.error('❌ [WALLET-CHECK] Failed to get Wallet Standard API:', error);
-        }
-
-        // Also check deprecated API for comparison
-        const nav = window.navigator as any;
-        console.log(`   📡 [WALLET-CHECK] (Deprecated) navigator.wallets exists: ${!!nav.wallets}`);
-        console.log(`   📡 [WALLET-CHECK] (Deprecated) navigator.wallets type: ${typeof nav.wallets}`);
-
-        // Check for legacy wallet APIs
-        console.log('🔍 [WALLET-CHECK] Checking for legacy wallet APIs...');
-        console.log(`   ${(window as any).solana ? '✅' : '❌'} [WALLET-CHECK] window.solana exists: ${!!(window as any).solana}`);
-        console.log(`   ${(window as any).solflare ? '✅' : '❌'} [WALLET-CHECK] window.solflare exists: ${!!(window as any).solflare}`);
-        console.log(`   ${(window as any).phantom ? '✅' : '❌'} [WALLET-CHECK] window.phantom exists: ${!!(window as any).phantom}`);
-      };
-
-      // Check immediately and after delays
-      console.log('⏱️ [WALLET-CHECK] Running immediate check...');
-      checkWallets();
-
-      setTimeout(() => {
-        console.log('⏱️ [WALLET-CHECK] Running 1-second delayed check...');
-        checkWallets();
-      }, 1000);
-
-      setTimeout(() => {
-        console.log('⏱️ [WALLET-CHECK] Running 3-second delayed check...');
-        checkWallets();
-      }, 3000);
+        standardWallets.forEach((w: any) => {
+          console.log(`📱 [WALLET-CHECK] ${w.name}: ${Object.keys(w.features || {}).length} features, ${w.accounts?.length || 0} accounts`);
+        });
+      } catch (error) {
+        console.error('❌ [WALLET-CHECK] Failed:', error);
+      }
     }
   }, [ready]);
 
