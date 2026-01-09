@@ -270,11 +270,13 @@ export default function WalletTest() {
       hasActiveWallet: !!activeWallet,
       walletsCount: wallets.length
     });
+    console.log('🔍 [SIGN-TX] Reading authenticated value from closure:', authenticated);
 
     if (!authenticated) {
       const errMsg = 'Not authenticated - please connect wallet first';
       setError(errMsg);
       console.error(`❌ [SIGN-TX] ${errMsg}`);
+      console.error(`❌ [SIGN-TX] This might be a stale closure if auth tracking shows different value`);
       return;
     }
 
@@ -375,8 +377,7 @@ export default function WalletTest() {
       setError(err.message);
       setStatus('Transaction failed');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publicKey, activeWallet, connection]);
+  }, [authenticated, publicKey, activeWallet, wallets, connection]);
 
   const handleLogin = useCallback(async () => {
     try {
