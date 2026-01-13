@@ -137,7 +137,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           showWalletLoginFirst: true,
           walletChainType: 'solana-only',
           walletList: [
-            'detected_solana_wallets',
             'phantom',
             'solflare',
             'wallet_connect',
