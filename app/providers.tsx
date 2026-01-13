@@ -147,7 +147,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         embeddedWallets: {
           createOnLogin: 'off', // Disable embedded wallet creation
         },
-        
+        externalWallets: {
+          solana: {
+            connectors: toSolanaWalletConnectors(),
+          },
+        },
       }}
     >
       {children}
