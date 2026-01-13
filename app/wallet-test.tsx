@@ -270,37 +270,17 @@ export default function WalletTest() {
       hasActiveWallet: !!activeWallet,
       walletsCount: wallets.length
     });
-    console.log('🔍 [SIGN-TX] Reading authenticated value from closure:', authenticated);
 
-    if (!authenticated) {
-      const errMsg = 'Not authenticated - please connect wallet first';
+    if (!activeWallet) {
+      const errMsg = 'No wallet connected';
       setError(errMsg);
       console.error(`❌ [SIGN-TX] ${errMsg}`);
-      console.error(`❌ [SIGN-TX] This might be a stale closure if auth tracking shows different value`);
       return;
     }
 
-    if (!publicKey || !activeWallet) {
-      const errMsg = 'WalletSignTransactionError: Connected wallet does not support signing transactions';
-      setError(errMsg);
-      console.error('❌ [SIGN-TX] ========================================');
-      console.error('❌ [SIGN-TX] ERROR REPRODUCED!');
-      console.error('❌ [SIGN-TX] ========================================');
-      console.error(`❌ [SIGN-TX] ${errMsg}`);
-      console.error(`📊 [SIGN-TX] Authenticated: ${authenticated} ✅`);
-      console.error(`📊 [SIGN-TX] PublicKey: ${publicKey ? 'exists' : 'null'} ${publicKey ? '✅' : '❌'}`);
-      console.error(`📊 [SIGN-TX] ActiveWallet: ${activeWallet ? 'exists' : 'null'} ${activeWallet ? '✅' : '❌'}`);
-      console.error('❌ [SIGN-TX] This is the exact scenario from issue #1364!');
-      console.error('❌ [SIGN-TX] ========================================');
-      return;
-    }
-
-    // Check if signTransaction method exists
-    if (typeof activeWallet.signTransaction !== 'function') {
-      const errMsg = 'WalletSignTransactionError: Wallet does not have signTransaction method';
-      setError(errMsg);
-      console.error(`❌ [SIGN-TX] ${errMsg}`);
-      console.error(`🔍 [SIGN-TX] ActiveWallet object:`, activeWallet);
+    if (!publicKey) {
+      setError('No public key available');
+      console.error(`❌ [SIGN-TX] No public key`);
       return;
     }
 
@@ -325,7 +305,8 @@ export default function WalletTest() {
         })
       );
 
-      console.log('🔏 Requesting signature from wallet via Privy...');
+      console.log('🔏 [SIGN-TX] Calling activeWallet.signTransaction() directly...');
+      console.log('🔍 [SIGN-TX] activeWallet.signTransaction type:', typeof activeWallet.signTransaction);
       setStatus('Waiting for signature...');
 
       const signed = await activeWallet.signTransaction(transaction);
