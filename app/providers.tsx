@@ -137,6 +137,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           showWalletLoginFirst: true,
           walletChainType: 'solana-only',
           walletList: [
+            'detected_solana_wallets',
             'phantom',
             'solflare',
             'wallet_connect',
@@ -146,13 +147,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         embeddedWallets: {
           createOnLogin: 'off', // Disable embedded wallet creation
         },
-        externalWallets: {
-          solana: {
-            connectors: toSolanaWalletConnectors(
-              {shouldAutoConnect: true}
-            ),
-          },
-        },
+        
       }}
     >
       {children}
