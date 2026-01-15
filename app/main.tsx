@@ -83,7 +83,13 @@ export default function Main() {
         },
         appearance: {
           showWalletLoginFirst: true,
-          walletChainType: 'solana-only'
+          walletChainType: 'solana-only',
+          walletList: [
+            'detected_solana_wallets',
+            'phantom',
+            'solflare',
+            'wallet_connect',
+          ],
         },
         loginMethods: ['wallet', 'email'],
         externalWallets: {
