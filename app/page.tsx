@@ -1,5 +1,5 @@
-import WalletTest from './wallet-test';
+import Main from './main';
 
-export default function Home() {
-  return <WalletTest />;
+export default function Page() {
+  return <Main />;
 }

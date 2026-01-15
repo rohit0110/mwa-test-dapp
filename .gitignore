@@ -81,5 +81,10 @@ logs/
 *.temp
 .cache/
 
+# Backup folders
+/app-backup/
+*-backup/
+*.backup
+
 # Railway (deployment platform)
 .railway/
