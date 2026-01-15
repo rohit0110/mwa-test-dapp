@@ -143,7 +143,7 @@ function App() {
           ) : (
             <div style={{ background: '#fff3e0', padding: 10, marginBottom: 10, borderRadius: 4 }}>
               <p style={{ color: '#e65100' }}>⚠️ Authenticated but NO wallets!</p>
-              <p>This is likely the "no solana adapters" issue.</p>
+              <p>This is likely the &quot;no solana adapters&quot; issue.</p>
               {user && <p>User ID: {user.id}</p>}
             </div>
           )}
