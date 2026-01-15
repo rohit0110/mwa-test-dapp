@@ -24,7 +24,7 @@ try {
     appIdentity: {
       name: 'Seeker App',
       uri: typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000',
-      icon: typeof window !== 'undefined' ? `${window.location.origin}/vite.svg` : '/vite.svg'
+      icon: '/icon-192.png'  // Must be relative URI
     },
     authorizationCache: createDefaultAuthorizationCache(),
     chains: ['solana:mainnet'],
